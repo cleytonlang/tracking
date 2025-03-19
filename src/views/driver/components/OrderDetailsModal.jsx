@@ -137,7 +137,7 @@ const OrderDetailsModal = ({ isOpen, onClose, orderData }) => {
   
   const completeDelivery = () => {
     if (deliveryPhotos.length === 0) {
-      alert("Por favor, adicione pelo menos uma foto antes de finalizar a entrega.");
+      alert("Please add at least one photo before finalizing delivery.");
       return;
     }
     
