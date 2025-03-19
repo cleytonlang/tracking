@@ -299,7 +299,7 @@ const OrderDetailsModal = ({ isOpen, onClose, orderData }) => {
             <button
               onClick={startDelivery}
               disabled={deliveryStatus === "In Progress" || deliveryStatus === "Completed"}
-              className={`rounded-xl px-5 py-2 text-white ${
+              className={`rounded-xl px-5 py-2 text-white w-[110px] ${
                 deliveryStatus === "In Progress" || deliveryStatus === "Completed"
                   ? "bg-gray-400 cursor-not-allowed"
                   : "bg-yellow-500 hover:bg-yellow-600 active:bg-yellow-700"
@@ -310,7 +310,7 @@ const OrderDetailsModal = ({ isOpen, onClose, orderData }) => {
             <button
               onClick={completeDelivery}
               disabled={deliveryStatus !== "In Progress"}
-              className={`rounded-xl px-5 py-2 text-white ${
+              className={`rounded-xl px-5 py-2 text-white w-[110px] ${
                 deliveryStatus !== "In Progress"
                   ? "bg-gray-400 cursor-not-allowed"
                   : "bg-green-500 hover:bg-green-600 active:bg-green-700"
