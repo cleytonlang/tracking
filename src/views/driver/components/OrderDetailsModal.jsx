@@ -1,10 +1,10 @@
 import React from "react";
 import Card from "components/card";
-import { MdClose, MdLocationOn, MdPerson, MdAssignment, MdDeliveryDining, MdAddAPhoto, MdOutlinePhoto } from "react-icons/md";
+import { MdClose, MdLocationOn, MdPerson, MdAssignment, MdDeliveryDining, MdAddAPhoto, MdOutlinePhoto, MdCreate, MdDownload, MdDeleteOutline, MdStar, MdStarOutline } from "react-icons/md";
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 // Fix for the default marker icon in Leaflet
 delete L.Icon.Default.prototype._getIconUrl;
@@ -82,6 +82,13 @@ const OrderDetailsModal = ({ isOpen, onClose, orderData }) => {
   const [deliveryPhotos, setDeliveryPhotos] = useState([]);
   const [isUploading, setIsUploading] = useState(false);
   const [deliveryStatus, setDeliveryStatus] = useState('');
+  const [signature, setSignature] = useState(null);
+  const [isSignatureMode, setIsSignatureMode] = useState(false);
+  const canvasRef = useRef(null);
+  const signatureContextRef = useRef(null);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [deliveryRating, setDeliveryRating] = useState(0);
+  const [deliveryCategory, setDeliveryCategory] = useState('');
   
   useEffect(() => {
     // Quando um pedido é carregado, defina o status inicial com base no status do pedido
@@ -144,6 +151,100 @@ const OrderDetailsModal = ({ isOpen, onClose, orderData }) => {
     setDeliveryStatus("Completed");
     // Aqui seria feita a atualização no backend
     console.log("Delivery completed for order:", orderData.order);
+  };
+
+  // Signature pad functions
+  const initializeSignaturePad = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 2;
+    signatureContextRef.current = ctx;
+    
+    // Clear the canvas
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  };
+  
+  const startDrawing = (e) => {
+    if (!signatureContextRef.current) return;
+    
+    const rect = canvasRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    signatureContextRef.current.beginPath();
+    signatureContextRef.current.moveTo(x, y);
+    setIsDrawing(true);
+  };
+  
+  const draw = (e) => {
+    if (!isDrawing || !signatureContextRef.current) return;
+    
+    const rect = canvasRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    signatureContextRef.current.lineTo(x, y);
+    signatureContextRef.current.stroke();
+  };
+  
+  const endDrawing = () => {
+    if (!signatureContextRef.current) return;
+    
+    signatureContextRef.current.closePath();
+    setIsDrawing(false);
+    
+    // Save the signature as image data
+    const canvas = canvasRef.current;
+    if (canvas) {
+      setSignature(canvas.toDataURL('image/png'));
+    }
+  };
+  
+  const clearSignature = () => {
+    if (!canvasRef.current || !signatureContextRef.current) return;
+    
+    const canvas = canvasRef.current;
+    const ctx = signatureContextRef.current;
+    
+    // Clear canvas
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Reset signature data
+    setSignature(null);
+  };
+  
+  const downloadSignature = () => {
+    if (!signature) return;
+    
+    const link = document.createElement('a');
+    link.href = signature;
+    link.download = `signature_order_${orderData.order}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+  
+  const toggleSignatureMode = () => {
+    setIsSignatureMode(prev => !prev);
+    if (!isSignatureMode) {
+      // Initialize signature pad when entering signature mode
+      setTimeout(() => {
+        initializeSignaturePad();
+      }, 0);
+    }
+  };
+
+  const handleCategoryChange = (e) => {
+    setDeliveryCategory(e.target.value);
+  };
+
+  const handleRatingChange = (rating) => {
+    setDeliveryRating(rating);
   };
 
   return (
@@ -282,15 +383,119 @@ const OrderDetailsModal = ({ isOpen, onClose, orderData }) => {
             )}
           </div>
 
-          {/* Order Instructions */}
+          {/* Customer Signature Section */}
+          <div className="p-3 bg-gray-100 dark:bg-navy-700 rounded-lg">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center">
+                <MdCreate className="h-5 w-5 text-brand-500 mr-2" />
+                <h4 className="font-semibold text-navy-700 dark:text-white">Customer Signature</h4>
+              </div>
+              <div className="flex space-x-2">
+                {signature && (
+                  <>
+                    <button 
+                      onClick={downloadSignature}
+                      className="flex items-center text-sm text-green-500 hover:text-green-600"
+                      title="Download Signature"
+                    >
+                      <MdDownload className="h-5 w-5" />
+                    </button>
+                    <button 
+                      onClick={clearSignature}
+                      className="flex items-center text-sm text-red-500 hover:text-red-600"
+                      title="Clear Signature"
+                    >
+                      <MdDeleteOutline className="h-5 w-5" />
+                    </button>
+                  </>
+                )}
+                <button
+                  onClick={toggleSignatureMode}
+                  className={`text-sm ${
+                    deliveryStatus === "Completed" 
+                      ? "text-gray-400 cursor-not-allowed" 
+                      : "text-brand-500 dark:text-brand-400 hover:text-brand-600"
+                  }`}
+                  disabled={deliveryStatus === "Completed"}
+                >
+                  {isSignatureMode ? "Cancel" : signature ? "Edit Signature" : "Add Signature"}
+                </button>
+              </div>
+            </div>
+            
+            {isSignatureMode ? (
+              <div className="ml-7 mt-2">
+                <div className="border border-gray-300 rounded-lg bg-white">
+                  <canvas
+                    ref={canvasRef}
+                    width={550}
+                    height={200}
+                    onMouseDown={startDrawing}
+                    onMouseMove={draw}
+                    onMouseUp={endDrawing}
+                    onMouseLeave={endDrawing}
+                    className="w-full cursor-crosshair"
+                  />
+                </div>
+                <div className="flex justify-end mt-2 space-x-2">
+                  <button
+                    onClick={clearSignature}
+                    className="px-3 py-1 text-sm text-red-500 border border-red-500 rounded hover:bg-red-50"
+                  >
+                    Clear
+                  </button>
+                  <button
+                    onClick={toggleSignatureMode}
+                    className="px-3 py-1 text-sm text-white bg-brand-500 rounded hover:bg-brand-600"
+                  >
+                    Save Signature
+                  </button>
+                </div>
+              </div>
+            ) : signature ? (
+              <div className="ml-7 mt-2 border border-gray-300 rounded-lg p-2 bg-white">
+                <img src={signature} alt="Customer Signature" className="w-full h-auto" />
+              </div>
+            ) : (
+              <p className="ml-7 text-gray-500 dark:text-gray-400 italic">
+                No signature yet. Click "Add Signature" to have the customer sign for the delivery.
+              </p>
+            )}
+          </div>
+          
+          {/* Delivery Categorization Section */}
           <div className="p-3 bg-gray-100 dark:bg-navy-700 rounded-lg">
             <div className="flex items-center mb-2">
-              <MdAssignment className="h-5 w-5 text-brand-500 mr-2" />
-              <h4 className="font-semibold text-navy-700 dark:text-white">Instructions</h4>
+              <MdStar className="h-5 w-5 text-brand-500 mr-2" />
+              <h4 className="font-semibold text-navy-700 dark:text-white">Delivery Rating</h4>
             </div>
-            <p className="ml-7 text-gray-700 dark:text-gray-300">
-              {orderData.instructions || "No special instructions for this delivery."}
-            </p>
+            
+            <div className="ml-7">
+              {/* Rating Stars */}
+              <div className="flex flex-col items-center">
+                <div className="flex justify-center my-2">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      onClick={() => handleRatingChange(star)}
+                      disabled={deliveryStatus === "Completed"}
+                      className={`text-2xl focus:outline-none mx-1 ${
+                        deliveryStatus === "Completed" ? "cursor-not-allowed" : "cursor-pointer"
+                      }`}
+                    >
+                      {star <= deliveryRating ? (
+                        <MdStar className="text-yellow-500 h-8 w-8" />
+                      ) : (
+                        <MdStarOutline className="text-gray-400 h-8 w-8 hover:text-yellow-300" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+                <span className="text-gray-700 dark:text-gray-300 text-center">
+                  {deliveryRating > 0 ? `${deliveryRating}/5` : "Not rated yet"}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
 
