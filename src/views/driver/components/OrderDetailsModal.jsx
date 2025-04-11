@@ -1,6 +1,6 @@
 import React from "react";
 import Card from "components/card";
-import { MdClose, MdLocationOn, MdPerson, MdAssignment, MdDeliveryDining, MdAddAPhoto, MdOutlinePhoto, MdCreate, MdDownload, MdDeleteOutline, MdStar, MdStarOutline } from "react-icons/md";
+import { MdClose, MdLocationOn, MdPerson, MdAssignment, MdDeliveryDining, MdAddAPhoto, MdOutlinePhoto, MdCreate, MdDownload, MdDeleteOutline, MdStar, MdStarOutline, MdComment, MdCall, MdRoute } from "react-icons/md";
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -143,8 +143,8 @@ const OrderDetailsModal = ({ isOpen, onClose, orderData }) => {
   };
   
   const completeDelivery = () => {
-    if (deliveryPhotos.length === 0) {
-      alert("Please add at least one photo before finalizing delivery.");
+    if (deliveryPhotos.length === 0 && document.getElementById("comments-section").value.trim()=== "") {
+      alert("Please add a photo or comments before finalizing delivery.");
       return;
     }
     
@@ -152,6 +152,8 @@ const OrderDetailsModal = ({ isOpen, onClose, orderData }) => {
     // Aqui seria feita a atualização no backend
     console.log("Delivery completed for order:", orderData.order);
   };
+
+ // Achei que precisaria criar uma funcao, tipo: const Comments = () => {}
 
   // Signature pad functions
   const initializeSignaturePad = () => {
@@ -284,7 +286,7 @@ const OrderDetailsModal = ({ isOpen, onClose, orderData }) => {
             </p>
           </div>
 
-          {/* Customer Info and Location Info in Two Columns */}
+          {/* Customer Info and Call Contact in Two Columns */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Customer Info */}
             <div className="p-3 bg-gray-100 dark:bg-navy-700 rounded-lg h-full">
@@ -293,18 +295,34 @@ const OrderDetailsModal = ({ isOpen, onClose, orderData }) => {
                 <h4 className="font-semibold text-navy-700 dark:text-white">Customer</h4>
               </div>
               <p className="ml-7 text-gray-700 dark:text-gray-300">{orderData.customer[0]}</p>
-            </div>
-
-            {/* Location Info */}
-            <div className="p-3 bg-gray-100 dark:bg-navy-700 rounded-lg h-full">
-              <div className="flex items-center mb-2">
-                <MdLocationOn className="h-5 w-5 text-brand-500 mr-2" />
-                <h4 className="font-semibold text-navy-700 dark:text-white">Delivery Address</h4>
+          </div> 
+           {/* Call Contact */}
+          <div className="p-3 bg-gray-100 dark:bg-navy-700 rounded-lg h-full">  
+           <button>     
+              <div className="flex items-center mt-2">
+                <MdCall className="h-5 w-5 text-brand-500 mr-2" />  
+                <h4 className="font-semibold text-navy-700 dark:text-white">Contact</h4>  
               </div>
-              <p className="ml-7 text-gray-700 dark:text-gray-300">{orderData.address}</p>
-            </div>
-          </div>
-
+              <p className="ml-7 text-gray-700 dark:text-gray-300">437-684-2752</p>
+           </button> 
+           </div> 
+          </div>  
+          {/* Location Info and Delivey Info in Two Columns */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Location Info */}
+            <div className="p-3 bg-gray-100 dark:bg-navy-700 rounded-lg h-full">  
+              <button className="flex items-center mb-2" onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(orderData.address)}`, '_blank')}>
+              <div className="flex items-center mb-2">  
+                <div className="p-3 bg-gray-100 dark:bg-navy-700 rounded-lg h-full">
+                  <div className="flex items-center mb-2">
+                    <MdLocationOn className="h-5 w-5 text-brand-500 mr-2" />
+                    <h4 className="font-semibold text-navy-700 dark:text-white">Delivery Address</h4>
+                  </div>
+                  <p className="ml-7 text-gray-700 dark:text-gray-300">{orderData.address}</p>  
+                </div>
+              </div>
+              </button>
+            </div>       
           {/* Delivery Info */}
           <div className="p-3 bg-gray-100 dark:bg-navy-700 rounded-lg">
             <div className="flex items-center mb-2">
@@ -313,6 +331,7 @@ const OrderDetailsModal = ({ isOpen, onClose, orderData }) => {
             </div>
             <p className="ml-7 text-gray-700 dark:text-gray-300">Distance: {orderData.distance} km</p>
             <p className="ml-7 text-gray-700 dark:text-gray-300">Estimated Time: {parseInt(orderData.distance) * 3 + 5} min</p>
+          </div>
           </div>
           
           {/* Delivery Photos Section */}
@@ -341,7 +360,7 @@ const OrderDetailsModal = ({ isOpen, onClose, orderData }) => {
                 </div>
               </label>
             </div>
-            
+
             {isUploading && (
               <div className="ml-7 mb-2 text-gray-600 dark:text-gray-400 flex items-center">
                 <div className="animate-spin h-4 w-4 border-2 border-brand-500 border-t-transparent rounded-full mr-2"></div>
@@ -381,6 +400,21 @@ const OrderDetailsModal = ({ isOpen, onClose, orderData }) => {
                 ))}
               </div>
             )}
+          </div>
+
+          {/* Comments Section */}
+          <div className="p-3 bg-gray-100 dark:bg-navy-700 rounded-lg">
+            <div className="flex items-center mb-2">
+              <div className="flex items-center">
+              </div>
+              <MdComment className="h-5 w-5 text-brand-500 mr-2" />
+              <h4 className="font-semibold text-navy-700 dark:text-white">Comments</h4>
+              </div>
+            <textarea id="comments-section" className="w-full p-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" rows="3"
+              placeholder="Add any comments or notes about the delivery here...">
+            </textarea>
+            <div className="ml-7 mb-2 text-gray-600 dark:text-gray-400 flex items-center">
+            </div>
           </div>
 
           {/* Customer Signature Section */}
